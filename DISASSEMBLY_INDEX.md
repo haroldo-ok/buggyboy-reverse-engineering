@@ -70,3 +70,21 @@ Static disassembly cannot resolve runtime-computed targets, and cannot distingui
 data that happens to decode as valid instructions. Treat unmarked runs with care;
 the `*`-marked regions and the annotated I/O accesses are the reliable backbone.
 The nine board PALs are `NO_DUMP` and are not represented here.
+
+---
+
+## Annotated subsystem listings (added after the raw disassemblies)
+
+Beyond the three raw listings above, three subsystems were transcribed into fully
+commented, human-readable listings, and the main CPU got a symbolized version:
+
+- `maincpu_8086_symbolized.asm` — the full main-CPU listing with function banners,
+  cross-reference headers, and `-> callee` names at each call site.
+- `soundcpu_z80_annotated.asm` — the Z80 sound engine, commented (AY output path,
+  voice control blocks, IRQ mixer, command mailbox).
+- `maincpu_text_engine_annotated.asm` — the HUD/text display-list interpreter and its
+  control-code table.
+- `maincpu_selftest_annotated.asm` — the boot self-test / service suite.
+
+See `README.md` for the full artefact index and `callgraph.png` (subroutine table in the technical reference, Appendix A)
+for the main-CPU subroutine map.

@@ -117,3 +117,43 @@ def draw_object(code, attr=0x00, x_scale=0x80, y_step=0x100, gxflip=0,
         y_scale+=y_step
     if maxx<0: return {},0,0,(0,0)
     return out,maxx-minx+1,maxy-miny+1,(minx,miny)
+
+
+# --- added: auto bank/validity helpers (fixes garbled objects) ---
+def _coh(px, off):
+    if not px: return 0.0
+    mnx, mny = off; g = {(x-mnx, y-mny): p for (x, y), p in px.items()}
+    eq = tot = 0
+    for (x, y), p in g.items():
+        for dx, dy in ((1, 0), (0, 1)):
+            q = g.get((x+dx, y+dy))
+            if q is not None:
+                tot += 1; eq += (p == q)
+    return eq/tot if tot else 0.0
+
+def object_is_valid(code, max_tiles=48):
+    """False for unused slots whose object-map width never terminates."""
+    for yrow in (2, 8, 16, 24):
+        ys = yrow << 8
+        b13 = bug13[(code<<4) | ((ys>>11)&0xf)]
+        if b13 == 0xff: continue
+        psa = (((code&0x80)<<5)|((code&0x40)<<6))&0x1000
+        psa |= ((bb8[code]<<8)|b13)&0x1fff
+        ra = (psa&~0xff)<<2; xacc=(psa&0xff)<<21; de=lt=0
+        for _ in range(max_tiles):
+            b17 = bug17s[(ra+((xacc>>19)&0x3ff))&0x7fff]
+            if (b17&0x40) and de: lt=1; break
+            de |= (b17&0x40); xacc += (8<<16)
+        if lt: return True
+    return False
+
+def draw_object_auto(code):
+    """Render with the correct tile bank auto-selected (attr bit4). Returns (pixels,w,h,off,attr)."""
+    best = None
+    for attr in (0x00, 0x10):
+        px, w, h, off = draw_object(code, attr=attr)
+        if not px: continue
+        s = _coh(px, off)
+        if best is None or s > best[0]: best = (s, px, w, h, off, attr)
+    if best is None: return {}, 0, 0, (0,0), 0
+    return best[1], best[2], best[3], best[4], best[5]
